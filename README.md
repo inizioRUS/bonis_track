@@ -32,7 +32,7 @@
   - верификация ответа;
   - NER для выявления объектов и уточнения информации о них;
   - Deep research.
-- 📊 Сравнение baseline vs agent по:
+- Сравнение baseline vs agent по:
   - Recall@k
   - MAP
   - nDCG
