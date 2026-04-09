@@ -28,7 +28,6 @@ class UserSettingsService:
         user = UserSettingsORM(
             user_id=user_id,
             username=username,
-            deep_research_enabled=False,
         )
         self.session.add(user)
         await self.session.commit()
