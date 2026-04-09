@@ -1,0 +1,121 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: src/backend/
+      dockerfile: Dockerfile
+    container_name: poc-backend
+    restart: unless-stopped
+    env_file:
+      - src/backend/.env
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+    ports:
+      - "8000:8000"
+    networks:
+      - poc-network
+
+  tg-bot:
+    build:
+      context: src/tg/
+      dockerfile: Dockerfile
+    container_name: poc-tg-bot
+    restart: unless-stopped
+    env_file:
+      - src/tg/.env
+    depends_on:
+      - backend
+    networks:
+      - poc-network
+  retrieval:
+    build:
+      context: src/retrieval/
+      dockerfile: Dockerfile
+    container_name: poc-retriever
+    restart: unless-stopped
+    env_file:
+      - src/retrieval/.env
+    depends_on:
+      - qdrant
+    ports:
+      - "8010:8010"
+    networks:
+      - poc-network
+  postgres:
+    image: postgres:16
+    container_name: poc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: poc_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - poc-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: poc-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - poc-network
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    container_name: poc-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - poc-network
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: poc-redisinsight
+    restart: unless-stopped
+    depends_on:
+      - redis
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    networks:
+      - poc-network
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: poc-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    depends_on:
+      - postgres
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - poc-network
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  redisinsight_data:
+  pgadmin_data:
+
+networks:
+  poc-network:
+    driver: bridge
