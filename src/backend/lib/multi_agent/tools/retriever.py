@@ -11,16 +11,18 @@ class RetrieverTool:
         self.timeout = settings.request_timeout_sec
 
     async def search(
-        self,
-        query: str,
-        top_k: int | None = None,
-        candidate_k: int | None = None,
-        doc_id: str | None = None,
+            self,
+            query: str,
+            top_k: int | None = None,
+            candidate_k: int | None = None,
+            doc_id: str | None = None,
+            search_mode: str = "hybrid"
     ) -> dict:
         payload: dict = {
             "query": query,
             "top_k": top_k or settings.retriever_top_k,
             "candidate_k": candidate_k or settings.retriever_candidate_k,
+            "search_mode": search_mode
         }
         if doc_id:
             payload["doc_id"] = doc_id

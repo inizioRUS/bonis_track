@@ -42,9 +42,9 @@ def _tool_call_signature(tool: str, arguments: dict[str, Any]) -> tuple:
 
 
 def _count_same_tool_call(
-    tool_history: list[dict[str, Any]],
-    tool: str,
-    arguments: dict[str, Any],
+        tool_history: list[dict[str, Any]],
+        tool: str,
+        arguments: dict[str, Any],
 ) -> int:
     target = _tool_call_signature(tool, arguments)
     count = 0
@@ -61,10 +61,10 @@ def _count_same_tool_call(
 
 @observe(as_type="generation")
 async def iterative_retrieval_node(
-    state: WorkflowState,
-    retriever_tool: RetrieverTool,
-    asana_tool: AsanaTool,
-    habr_tool: HabrTool,
+        state: WorkflowState,
+        retriever_tool: RetrieverTool,
+        asana_tool: AsanaTool,
+        habr_tool: HabrTool,
 ) -> dict:
     print(state)
     plan = state.get("plan", {})
@@ -114,13 +114,22 @@ async def iterative_retrieval_node(
                 query = arguments.get("query")
                 if not query:
                     raise ValueError("retriever.search requires 'query'")
-
-                result = await retriever_tool.search(
-                    query=query,
-                    top_k=arguments.get("top_k"),
-                    candidate_k=arguments.get("candidate_k"),
-                    doc_id=arguments.get("doc_id"),
-                )
+                try:
+                    result = await retriever_tool.search(
+                        query=query,
+                        top_k=arguments.get("top_k"),
+                        candidate_k=arguments.get("candidate_k"),
+                        doc_id=arguments.get("doc_id"),
+                    )
+                except Exception as e:
+                    print(f"Failed vector search with error {e[:200]} change to bm25")
+                    result = await retriever_tool.search(
+                        query=query,
+                        top_k=arguments.get("top_k"),
+                        candidate_k=arguments.get("candidate_k"),
+                        doc_id=arguments.get("doc_id"),
+                        search_mode="bm25"
+                    )
                 result["type"] = "retriever_search"
                 retrieval_results.append(result)
                 evidence.append(result)

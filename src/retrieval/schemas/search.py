@@ -1,6 +1,9 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel
+
+
+SearchMode = Literal["vector", "bm25", "hybrid"]
 
 
 class SearchRequest(BaseModel):
@@ -8,6 +11,7 @@ class SearchRequest(BaseModel):
     top_k: int = 5
     candidate_k: int = 30
     doc_id: Optional[str] = None
+    search_mode: SearchMode = "hybrid"
 
 
 class SearchHit(BaseModel):
@@ -15,10 +19,12 @@ class SearchHit(BaseModel):
     doc_id: str
     text: str
     metadata: Dict[str, Any]
-    vector_score: float
+    retrieval_mode: SearchMode
+    retrieval_score: float
     rerank_score: float
 
 
 class SearchResponse(BaseModel):
     query: str
+    search_mode: SearchMode
     hits: List[SearchHit]

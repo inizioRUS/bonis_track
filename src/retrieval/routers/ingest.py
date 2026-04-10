@@ -3,12 +3,18 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client.models import PointStruct
 
-from core.dependencies import get_embedding_service, get_qdrant_service
+from core.config import settings
+from core.dependencies import (
+    get_embedding_service,
+    get_qdrant_service,
+    get_sparse_embedding_service,
+)
 from schemas.ingest import IngestRequest, IngestResponse
 from services.chunker import ChunkerService
-from services.parser import ArticleParserService
 from services.embeddings import EmbeddingService
+from services.parser import ArticleParserService
 from services.qdrant_service import QdrantService
+from services.sparse_embeddings import SparseEmbeddingService
 from utils.text import make_chunk_id
 
 
@@ -19,6 +25,7 @@ router = APIRouter()
 def ingest(
     request: IngestRequest,
     embedding_service: EmbeddingService = Depends(get_embedding_service),
+    sparse_embedding_service: SparseEmbeddingService = Depends(get_sparse_embedding_service),
     qdrant_service: QdrantService = Depends(get_qdrant_service),
 ):
     parser = ArticleParserService()
@@ -41,12 +48,21 @@ def ingest(
     if not chunks:
         raise HTTPException(status_code=400, detail="No chunks produced")
 
-    vectors = embedding_service.encode_passages(chunks)
+    dense_vectors = embedding_service.encode_passages(chunks)
+    sparse_vectors = sparse_embedding_service.encode_passages(chunks)
+
+    if len(dense_vectors) != len(chunks):
+        raise HTTPException(status_code=500, detail="Dense embedding count mismatch")
+
+    if len(sparse_vectors) != len(chunks):
+        raise HTTPException(status_code=500, detail="Sparse embedding count mismatch")
 
     points: list[PointStruct] = []
-    for idx, (chunk, vector) in enumerate(zip(chunks, vectors)):
-        chunk_id = make_chunk_id(doc_id, idx, chunk)
 
+    for idx, (chunk, dense_vector, sparse_vector) in enumerate(
+        zip(chunks, dense_vectors, sparse_vectors)
+    ):
+        chunk_id = make_chunk_id(doc_id, idx, chunk)
         window = chunker.build_chunk_window(chunks, idx, radius=2)
 
         payload = {
@@ -59,11 +75,13 @@ def ingest(
                 "window": window,
             },
         }
-
         points.append(
             PointStruct(
                 id=chunk_id,
-                vector=vector,
+                vector={
+                    settings.DENSE_VECTOR_NAME: dense_vector,
+                    settings.SPARSE_VECTOR_NAME: sparse_vector,
+                },
                 payload=payload,
             )
         )

@@ -47,5 +47,10 @@ class Settings:
     SEARCH_CANDIDATES: int = int(os.getenv("SEARCH_CANDIDATES", "30"))
     REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "20"))
 
+    DENSE_VECTOR_NAME: str = os.getenv("DENSE_VECTOR_NAME", "dense")
+    SPARSE_VECTOR_NAME: str = os.getenv("SPARSE_VECTOR_NAME", "bm25")
+
+    FASTEMBED_BM25_MODEL: str = os.getenv("FASTEMBED_BM25_MODEL", "Qdrant/bm25")
+
 
 settings = Settings()
