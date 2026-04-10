@@ -6,6 +6,7 @@ from typing import Any
 from langfuse import observe
 
 from lib.observability.langfuse_client import get_langfuse_client
+from lib.security.anonymization import anonymize_state_fragment
 
 SENSITIVE_KEYS = {
     "password",
@@ -60,7 +61,7 @@ def update_current_observation(
     if name is not None:
         kwargs["name"] = name
     if input_data is not None:
-        kwargs["input"] = input_data
+        kwargs["input"] = anonymize_state_fragment(input_data)
     if output_data is not None:
         kwargs["output"] = output_data
     if metadata is not None:
@@ -85,7 +86,7 @@ def log_langfuse_generation(
     client.update_current_generation(
         name=name,
         model=response['model'],
-        input=model_input,
+        input=anonymize_state_fragment(model_input),
         output=response['choices'],
         usage_details={
             "input": response["usage"]["prompt_tokens"],
