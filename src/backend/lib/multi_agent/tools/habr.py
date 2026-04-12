@@ -14,9 +14,9 @@ class HabrTool:
         self.headers = {
             "User-Agent": "Mozilla/5.0",
         }
-
     async def get_article_text(self, url: str) -> dict:
-        print(url)
+        if url[-1] != "/":
+            url += "/"
         async with httpx.AsyncClient(timeout=self.timeout, headers=self.headers, follow_redirects=True, ) as client:
             response = await client.get(url)
             response.raise_for_status()
