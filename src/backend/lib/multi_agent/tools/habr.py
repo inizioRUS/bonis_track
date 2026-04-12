@@ -17,7 +17,7 @@ class HabrTool:
 
     async def get_article_text(self, url: str) -> dict:
         print(url)
-        async with httpx.AsyncClient(timeout=self.timeout, headers=self.headers) as client:
+        async with httpx.AsyncClient(timeout=self.timeout, headers=self.headers, follow_redirects=True, ) as client:
             response = await client.get(url)
             response.raise_for_status()
             html = response.text
@@ -28,9 +28,9 @@ class HabrTool:
         title = title_node.get_text(" ", strip=True) if title_node else ""
 
         article_node = (
-            soup.select_one("div.tm-article-body")
-            or soup.select_one("div.article-formatted-body")
-            or soup.select_one("article")
+                soup.select_one("div.tm-article-body")
+                or soup.select_one("div.article-formatted-body")
+                or soup.select_one("article")
         )
 
         if not article_node:
