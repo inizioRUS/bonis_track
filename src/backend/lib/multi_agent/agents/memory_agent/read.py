@@ -14,15 +14,21 @@ async def memory_read_node(
 ) -> dict:
     user_id = state.get("user_id", "")
     session_id = state.get("session_id", "")
-
+    is_eval = state.get("is_eval", False)
+    if is_eval:
+        memory_hits = []
+        return {
+            "memory_hits": memory_hits,
+        }
     memory_hits = await memory_tool.get(session_id, user_id)
-
+    trace_tags = ["eval"] if is_eval else ["prod"]
     update_current_observation(
         name="memory_read_node",
         metadata={
             "session_id": state.get("session_id"),
             "memory_hits": memory_hits,
         },
+        tags=trace_tags
     )
     return {
         "memory_hits": memory_hits,

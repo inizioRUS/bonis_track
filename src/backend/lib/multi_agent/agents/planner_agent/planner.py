@@ -35,9 +35,13 @@ You have access to two categories of tools:
 6. asana.get_project(project_gid)
 7. asana.get_project_tasks(project_id?, completed_since?, limit?)
 8. asana.get_task(task_gid, opt_fields?)
-9. asana.search_tasks(text, workspace_gid?, project_gid?, completed?, assignee_gid?, limit?)
+9. asana.search_tasks(text, workspace_gid, project_gid?, completed?, assignee_gid?, limit?)
 10. asana.get_task_stories(task_gid)
 11. asana.get_sections(project_gid?)
+
+* task_gid,project_id,team_gid, assignee_gid - it's always numeric
+
+* habr url always should views like https://habr.com/ru/articles/<id>/
 
 --- EXECUTION TOOLS (write operations, cause side effects) ---
 1. asana.create_task(name, notes?, project_gid?, workspace_gid?, assignee_gid?, due_on?, due_at?, section_gid?, tags?, custom_fields?)
@@ -45,6 +49,8 @@ You have access to two categories of tools:
 3. asana.add_comment_to_task(task_gid, text)
 4. asana.create_section(project_gid?, name)
 5. asana.add_task_to_section(task_gid, section_gid)
+
+task_gid,project_id,team_gid, assignee_gid - it's always numeric
 
 Rules:
 - Separate retrieval steps and execution steps.
@@ -58,11 +64,13 @@ Rules:
 - If the user query is about internal tasks, projects, statuses, assignees, deadlines, comments, or project structure, prefer Asana tools.
 - If the query is about documents, internal knowledge, or semantic search, prefer retriever.search.
 - If a relevant Habr URL is already known and article text has not been downloaded yet, use habr.get_article_text.
-- If critical facts are still missing, propose no more than 3 retrieval tool calls in one plan iteration.
+- If critical facts are still missing, propose no more than 20 retrieval tool calls in one plan iteration.
 - Execution steps must be precise and safe (never guess IDs or critical fields).
 - If the workflow is close to completion, say that no more tool calls are needed.
 - Never invent tool names.
 - Never output explanatory text outside JSON.
+- retriever.search its more about search documents or extra context exclude tasks
+- you can't make equals requests
 
 Current state:
 user_query = {state.get("user_query", "")}
@@ -101,7 +109,8 @@ Return JSON with exactly these fields:
         plan["steps"] = []
         if not plan.get("completion_criteria"):
             plan["completion_criteria"] = ["Stop tool usage and prepare final response"]
-
+    is_eval = state.get("is_eval", False)
+    trace_tags = ["eval"] if is_eval else ["prod"]
     log_langfuse_generation(
         name="planner_node",
         response=data,
@@ -111,6 +120,7 @@ Return JSON with exactly these fields:
             "session_id": state.get("session_id"),
             "memory_hits": plan
         },
+        tags=trace_tags
     )
 
     return {

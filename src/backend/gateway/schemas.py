@@ -14,6 +14,8 @@ class AskRequest(BaseModel):
     user_id: str
     username: str | None = None
     deep_research: bool = False
+    is_eval: bool = False
+    expected_doc_ids: list[str] = Field(default_factory=list)
 
 
 class SourceItem(BaseModel):

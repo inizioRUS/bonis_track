@@ -112,6 +112,7 @@ async def iterative_retrieval_node(
 
             if tool_name == "retriever.search":
                 query = arguments.get("query")
+
                 if not query:
                     raise ValueError("retriever.search requires 'query'")
                 try:
@@ -254,6 +255,8 @@ async def iterative_retrieval_node(
             )
 
     plan["steps"] = []
+    is_eval = state.get("is_eval", False)
+    trace_tags = ["eval"] if is_eval else ["prod"]
     update_current_observation(
         name="retrieval_node",
         metadata={
@@ -261,6 +264,7 @@ async def iterative_retrieval_node(
             "executed_steps": executed_steps,
             "iteration": state.get("iteration", 0) + 1,
         },
+        tags=trace_tags
     )
 
     return {

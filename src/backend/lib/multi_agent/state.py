@@ -4,9 +4,9 @@ from typing_extensions import TypedDict
 
 class MemoryItem(TypedDict, total=False):
     id: str
-    kind: str              # "user_pref" | "project_fact" | "task_context" | "summary" | ...
+    kind: str  # "user_pref" | "project_fact" | "task_context" | "summary" | ...
     content: str
-    source: str            # "session" | "asana" | "retriever" | "llm"
+    source: str  # "session" | "asana" | "retriever" | "llm"
     score: float
     metadata: dict[str, Any]
 
@@ -35,4 +35,7 @@ class WorkflowState(TypedDict, total=False):
     max_iterations: int
 
     # memory
-    memory_hits: list[MemoryItem]        # что достали из долговременной памяти
+    memory_hits: list[MemoryItem]  # что достали из долговременной памяти
+
+    expected_doc_ids: list[str]
+    is_eval: bool

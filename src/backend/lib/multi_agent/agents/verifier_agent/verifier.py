@@ -97,7 +97,8 @@ Return JSON with exactly these fields:
             else:
                 next_agent = "writer_agent"
             verification["next_agent"] = next_agent
-
+    is_eval = state.get("is_eval", False)
+    trace_tags = ["eval"] if is_eval else ["prod"]
     log_langfuse_generation(
         name="verifier_node",
         response=data,
@@ -108,6 +109,7 @@ Return JSON with exactly these fields:
             "memory_hits": verification,
             "iteration": iteration + 1,
         },
+        tags=trace_tags
     )
     return {
         "verification": verification,

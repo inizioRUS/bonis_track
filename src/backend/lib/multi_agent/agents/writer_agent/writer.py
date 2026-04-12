@@ -24,41 +24,50 @@ retrieval_results = {state.get("retrieval_results", [])}
 
 Если данных не хватает, честно скажи об этом.
 """
-    print(state.get("evidence"))
+
     final_answer, data, latency = await llm.generate_text(prompt)
     final_sources: list[dict] = []
-    print(state.get("evidence"))
+    was_id = set()
+
     for item in state.get("evidence", []):
         if item["type"] == "retriever_search":
             hits = item.get("hits", [])
             for hit in hits:
                 meta = hit.get("metadata", {})
+                if meta.get("url") not in was_id:
+                    final_sources.append(
+                        {
+                            "source": "retriever",
+                            "title": meta.get("title"),
+                            "url": meta.get("url"),
+                            "doc_id": hit.get("doc_id"),
+                        }
+                    )
+                    was_id.add(meta.get("url"))
+
+        elif item["type"] == "habr_article":
+            if item.get("url") not in was_id:
                 final_sources.append(
                     {
-                        "source": "retriever",
-                        "title": meta.get("title"),
-                        "url": meta.get("url"),
-                        "doc_id": hit.get("doc_id"),
+                        "source": "habr",
+                        "title": item.get("title"),
+                        "url": item.get("url"),
                     }
                 )
-        elif item["type"] == "habr_article":
-            final_sources.append(
-                {
-                    "source": "habr",
-                    "title": item.get("title"),
-                    "url": item.get("url"),
-                }
-            )
+                was_id.add(item.get("url"))
         elif item["type"] == "asana":
             article = item.get("result", {})
-            final_sources.append(
-                {
-                    "source": "asana",
-                    "title": article.get("title"),
-                    "url": article.get("url"),
-                }
-            )
-
+            if article.get("url") not in was_id:
+                final_sources.append(
+                    {
+                        "source": "asana",
+                        "title": article.get("title"),
+                        "url": article.get("url"),
+                    }
+                )
+                was_id.add(article.get("url"))
+    is_eval = state.get("is_eval", False)
+    trace_tags = ["eval"] if is_eval else ["prod"]
     log_langfuse_generation(
         name="writer_node",
         response=data,
@@ -70,6 +79,7 @@ retrieval_results = {state.get("retrieval_results", [])}
             "final_sources": final_sources,
             "iteration": state.get("iteration", 0) + 1,
         },
+        tags=trace_tags
     )
     return {
         "final_answer": final_answer,

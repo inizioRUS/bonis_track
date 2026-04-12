@@ -230,7 +230,8 @@ async def execution_node(
 
 
     state["plan"]["execution_steps"] = []
-
+    is_eval = state.get("is_eval", False)
+    trace_tags = ["eval"] if is_eval else ["prod"]
     update_current_observation(
         name="execution_node",
         metadata={
@@ -238,6 +239,7 @@ async def execution_node(
             "executed_steps": executed_steps,
             "iteration": state.get("iteration") + 1,
         },
+        tags=trace_tags
     )
 
     return {

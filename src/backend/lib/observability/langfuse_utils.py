@@ -52,8 +52,9 @@ def update_current_observation(
         metadata: dict[str, Any] | None = None,
         level: str | None = None,
         status_message: str | None = None,
+        tags: list[str] | None = None,
 ) -> None:
-    client = get_langfuse_client()
+    client = get_langfuse_client(tags[0])
     if client is None:
         return
 
@@ -63,9 +64,9 @@ def update_current_observation(
     if input_data is not None:
         kwargs["input"] = anonymize_state_fragment(input_data)
     if output_data is not None:
-        kwargs["output"] = output_data
+        kwargs["output"] = anonymize_state_fragment(output_data)
     if metadata is not None:
-        kwargs["metadata"] = metadata
+        kwargs["metadata"] = sanitize_value(metadata)
     if level is not None:
         kwargs["level"] = level
     if status_message is not None:
@@ -78,51 +79,67 @@ def log_langfuse_generation(
         *,
         name: str,
         model_input: Any,
-        response,
+        response: dict[str, Any],
         latency_ms: float,
         metadata: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
 ) -> None:
-    client = get_langfuse_client()
-    client.update_current_generation(
-        name=name,
-        model=response['model'],
-        input=anonymize_state_fragment(model_input),
-        output=response['choices'],
-        usage_details={
-            "input": response["usage"]["prompt_tokens"],
-            "output": response["usage"]["completion_tokens"],
-            "total": response["usage"]["total_tokens"],
+    client = get_langfuse_client(tags[0])
+    if client is None:
+        return
+
+    usage = response.get("usage", {})
+    cost_details = usage.get("cost_details", {})
+
+    kwargs = {
+        "name": name,
+        "model": response.get("model"),
+        "input": anonymize_state_fragment(model_input),
+        "output": anonymize_state_fragment(response.get("choices")),
+        "usage_details": {
+            "input": usage.get("prompt_tokens", 0),
+            "output": usage.get("completion_tokens", 0),
+            "total": usage.get("total_tokens", 0),
         },
-        cost_details={
-            "input": response["usage"]["cost_details"]["upstream_inference_cost"],
-            "output": response["usage"]["cost_details"]["upstream_inference_prompt_cost"],
-            'total':response["usage"]["cost_details"]["upstream_inference_completions_cost"]
+        "cost_details": {
+            "input": cost_details.get("upstream_inference_prompt_cost", 0.0),
+            "output": cost_details.get("upstream_inference_completions_cost", 0.0),
+            "total": cost_details.get("upstream_inference_cost", 0.0),
         },
-        metadata={
+        "metadata": sanitize_value({
             **(metadata or {}),
-            "latency_ms": latency_ms
-        },
-    )
+            "latency_ms": latency_ms,
+        }),
+    }
+
+    client.update_current_generation(**kwargs)
 
 
-def log_trace_score(
-        *,
-        name: str,
-        value: float,
-        comment: str | None = None,
-) -> None:
-    client = get_langfuse_client()
-    client.score_current_trace(
-        name=name,
-        value=value,
-        comment=comment,
-    )
+def log_eval_scores(scores: dict[str, float], comment: str | None = None, tags=None) -> None:
+    client = get_langfuse_client(tags[0])
+    if client is None:
+        return
+
+    for name, value in scores.items():
+        client.score_current_trace(
+            name=name,
+            value=float(value),
+            comment=comment,
+        )
 
 
-def flush_langfuse() -> None:
-    client = get_langfuse_client()
+def flush_langfuse(tags=None) -> None:
+    client = get_langfuse_client(tags[0])
     if client is not None:
         client.flush()
 
 
-__all__ = ["observe", "anonymize_user_id", "sanitize_value", "update_current_observation", "flush_langfuse"]
+__all__ = [
+    "observe",
+    "anonymize_user_id",
+    "sanitize_value",
+    "update_current_observation",
+    "log_langfuse_generation",
+    "log_eval_scores",
+    "flush_langfuse",
+]

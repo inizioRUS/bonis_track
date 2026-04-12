@@ -14,7 +14,7 @@ from db.redis.session_metadata_service import SessionMetadataService
 from gateway.schemas import AskRequest, AskResponse
 from lib.multi_agent.agents.orchestrator.workflow import RAGWorkflow
 from pydantic import BaseModel, Field
-
+from core.config import settings
 router = APIRouter()
 
 FERNET_SECRET = os.getenv("FERNET_SECRET", "")
@@ -62,24 +62,29 @@ async def ask(
             username=request.username,
         )
 
-        await postgres_client.save_message(
-            session_id=request.session_id,
-            user_id=request.user_id,
-            username=request.username,
-            content=request.query,
-            role="user",
-        )
+        if not request.is_eval:
+            await postgres_client.save_message(
+                session_id=request.session_id,
+                user_id=request.user_id,
+                username=request.username,
+                content=request.query,
+                role="user",
+            )
 
-        history = await postgres_client.get_recent_messages(
-            session_id=request.session_id,
-            limit=20,
-        )
+        history = []
+        if not request.is_eval:
+            history = await postgres_client.get_recent_messages(
+                session_id=request.session_id,
+                limit=20,
+            )
+
         user = await user_settings_service.get_user_by_user_id(user_id=request.user_id)
-
-        asana_api_key = fernet.decrypt(
+        try:
+            asana_api_key = fernet.decrypt(
             user.asana_api_key_encrypted.encode()
-        ).decode()
-
+            ).decode()
+        except:
+            asana_api_key = settings.default_asana_workspace_id
         workflow = RAGWorkflow(redis_metadata, asana_api_key)
         workflow_result = await workflow.run(
             session_id=request.session_id,
@@ -88,6 +93,8 @@ async def ask(
             query=request.query,
             deep_research=request.deep_research,
             redis_client=redis_metadata,
+            is_eval=request.is_eval,
+            expected_doc_ids=request.expected_doc_ids,
             history=[
                 {
                     "role": msg.role,
@@ -98,16 +105,16 @@ async def ask(
         )
 
         answer = workflow_result.get("final_answer", "Не удалось подготовить ответ.")
-        print(workflow_result)
         sources = workflow_result.get("final_sources", [])
 
-        await postgres_client.save_message(
-            session_id=request.session_id,
-            user_id=request.user_id,
-            username=request.username,
-            content=answer,
-            role="assistant",
-        )
+        if not request.is_eval:
+            await postgres_client.save_message(
+                session_id=request.session_id,
+                user_id=request.user_id,
+                username=request.username,
+                content=answer,
+                role="assistant",
+            )
 
         return AskResponse(
             answer=answer,
@@ -140,7 +147,6 @@ async def set_asana_key(
         except InvalidToken as exc:
             raise HTTPException(status_code=400, detail="Invalid encrypted_api_key") from exc
 
-        # Сохраняем в БД в зашифрованном виде
         server_encrypted_key = fernet.encrypt(decrypted_api_key.encode()).decode()
 
         await user_settings_service.set_asana_api_key(

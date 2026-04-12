@@ -35,7 +35,7 @@ Rules:
 - If two items refer to the same entity, keep one merged item.
 - The "content" field should stay in normalized format like:
   "project: Backend API -> 123456789"
-
+- focus on save id and url of all object(documents, task, projects etc)
 User query:
 {user_query}
 
@@ -84,7 +84,7 @@ async def memory_write_node(
     memory_hits = state.get("memory_hits", "")
     final_answer = state.get("final_answer", "")
     user_query = state.get("user_query", "")
-
+    is_eval = state.get("is_eval", False)
     prompt = _build_memory_merge_prompt(
         user_query=user_query,
         existing_items=memory_hits,
@@ -104,13 +104,19 @@ async def memory_write_node(
     except Exception:
         merged_items = memory_hits
         data = {}
-
+    if is_eval:
+        merged_items = []
+        return {
+            "memory_write_queue": [],
+            "session_memory": merged_items,
+        }
     await memory_tool.write(
         user_id=user_id,
         session_id=session_id,
         payload=merged_items,
     )
 
+    trace_tags = ["eval"] if is_eval else ["prod"]
     log_langfuse_generation(
         name="memory_write_node",
         response=data,
@@ -120,6 +126,7 @@ async def memory_write_node(
             "session_id": state.get("session_id"),
             "memory_hits": merged_items,
         },
+        tags=trace_tags
     )
 
     return {
