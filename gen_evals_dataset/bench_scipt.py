@@ -12,6 +12,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+from tqdm.asyncio import tqdm_asyncio
 
 
 @dataclass
@@ -74,7 +75,6 @@ def load_dataset(path: str) -> list[dict[str, Any]]:
     if not raw:
         raise ValueError("Входной файл пуст")
 
-    # JSON array / JSON object
     if raw[0] in "[{":
         data = json.loads(raw)
         if isinstance(data, dict):
@@ -85,7 +85,6 @@ def load_dataset(path: str) -> list[dict[str, Any]]:
             return data
         raise ValueError("Неподдерживаемый JSON-формат")
 
-    # JSONL
     rows = []
     for line in raw.splitlines():
         line = line.strip()
@@ -164,7 +163,7 @@ def extract_urls_from_source(source: Any) -> list[str]:
             value = source.get(key)
             if isinstance(value, str) and value.startswith(("http://", "https://")):
                 urls.append(value)
-        # Иногда nested metadata
+
         metadata = source.get("metadata")
         if isinstance(metadata, dict):
             urls.extend(extract_urls_from_source(metadata))
@@ -343,8 +342,10 @@ def write_outputs(output_prefix: str, rows: list[EvalRow], summary: Summary) -> 
 
 
 async def main() -> None:
-    dataset = load_dataset("C:\\Users\\garan\\PycharmProjects\\bonis_track\\gen_evals_dataset\\examples\\rag_eval_dataset.json")[:1]
-    semaphore = asyncio.Semaphore(1)
+    dataset = load_dataset(
+        "\\bonis_track\\gen_evals_dataset\\examples\\rag_eval_dataset.json"
+    )
+    semaphore = asyncio.Semaphore(1)  # или parse_args().concurrency
 
     async with httpx.AsyncClient(timeout=300) as client:
         tasks = [
@@ -362,7 +363,13 @@ async def main() -> None:
             )
             for sample in dataset
         ]
-        rows = await asyncio.gather(*tasks)
+
+        rows = await tqdm_asyncio.gather(
+            *tasks,
+            desc="Running evals",
+            total=len(tasks),
+        )
+
         print(rows)
 
 

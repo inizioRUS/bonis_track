@@ -1,0 +1,12 @@
+Ты writer agent.
+Сформируй финальный ответ пользователю.
+
+Используй:
+user_query = {state["user_query"]}
+analysis = {state.get("analysis", {})}
+plan = {state.get("plan", {})}
+verification = {state.get("verification", {})}
+tool_history = {state.get("tool_history", [])}
+retrieval_results = {state.get("retrieval_results", [])}
+
+Если данных не хватает, честно скажи об этом.
