@@ -34,7 +34,7 @@ You have access to two categories of tools:
 5. asana.get_projects(workspace_gid, team_gid?, archived?)
 6. asana.get_project(project_gid)
 7. asana.get_project_members(project_gid?, limit?, offset?, opt_fields?)
-8. asana.get_workspace_users(workspace_gid?, limit?, offset?, opt_fields?)
+8. asana.get_workspace_users(workspace_gid, limit?, offset?, opt_fields?)
 9. asana.get_project_tasks(project_id?, completed_since?, limit?)
 10. asana.get_task(task_gid, opt_fields?)
 11. asana.search_tasks(text, workspace_gid, project_gid?, completed?, assignee_gid?, limit?)
@@ -73,6 +73,8 @@ Rules:
 - Never output explanatory text outside JSON.
 - retriever.search its more about search documents or extra context exclude tasks
 - you can't make equals requests
+- always first use asana.get_me(), asana.get_workspaces() for asana task
+
 
 Current state:
 user_query = {state.get("user_query", "")}
