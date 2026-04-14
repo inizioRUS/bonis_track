@@ -122,7 +122,6 @@ async def clear_chat_on_backend(
 def format_answer(data: dict[str, Any]) -> str:
     answer = data.get("answer") or data.get("message") or "Пустой ответ от backend."
     sources = data.get("sources") or []
-    print(sources)
     mode = data.get("mode")
     uncertainty = data.get("uncertainty")
 

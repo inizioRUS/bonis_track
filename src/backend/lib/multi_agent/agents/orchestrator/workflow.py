@@ -20,14 +20,12 @@ def compute_retrieval_metrics(
         final_sources: list[dict],
         expected_doc_ids: list[str],
 ) -> dict[str, float]:
-    print(expected_doc_ids)
     if not expected_doc_ids:
         return {}
 
     retrieved_doc_ids: list[str] = []
     for source in final_sources:
         doc_id = source.get("url")
-        print(doc_id)
         if doc_id:
             retrieved_doc_ids.append(str(doc_id))
 

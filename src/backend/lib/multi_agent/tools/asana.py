@@ -22,7 +22,6 @@ class AsanaTool:
         }
         if self.pat:
             headers["Authorization"] = f"Bearer {self.pat}"
-
         self.headers = headers
 
     async def _request(
@@ -34,7 +33,6 @@ class AsanaTool:
         json_body: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         url = f"{self.base_url}{path}"
-
         async with httpx.AsyncClient(timeout=self.timeout, headers=self.headers) as client:
             response = await client.request(
                 method=method,
@@ -85,6 +83,50 @@ class AsanaTool:
 
     async def get_project(self, project_gid: str) -> dict[str, Any]:
         return await self._request("GET", f"/projects/{project_gid}")
+
+    async def get_project_members(
+        self,
+        project_gid: str | None = None,
+        *,
+        limit: int | None = None,
+        offset: str | None = None,
+        opt_fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        project = project_gid or settings.default_asana_project_id
+        if not project:
+            raise AsanaToolError("Asana project id is not configured")
+
+        params: dict[str, Any] = {}
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        if opt_fields:
+            params["opt_fields"] = ",".join(opt_fields)
+
+        return await self._request("GET", f"/projects/{project}/members", params=params)
+
+    async def get_workspace_users(
+        self,
+        workspace_gid: str | None = None,
+        *,
+        limit: int | None = None,
+        offset: str | None = None,
+        opt_fields: list[str] | None = None,
+    ) -> dict[str, Any]:
+        workspace = workspace_gid or settings.default_asana_workspace_id
+        if not workspace:
+            raise AsanaToolError("Asana workspace id is not configured")
+
+        params: dict[str, Any] = {}
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        if opt_fields:
+            params["opt_fields"] = ",".join(opt_fields)
+
+        return await self._request("GET", f"/workspaces/{workspace}/users", params=params)
 
     async def get_project_tasks(
         self,
@@ -200,18 +242,18 @@ class AsanaTool:
             data["due_at"] = due_at
         if custom_fields:
             data["custom_fields"] = custom_fields
-
         if project:
             data["projects"] = [project]
-
         if tags:
             data["tags"] = tags
 
         created = await self._request("POST", "/tasks", json_body={"data": data})
+
         if section_gid:
             task_gid = created.get("data", {}).get("gid")
             if task_gid:
                 await self.add_task_to_section(task_gid=task_gid, section_gid=section_gid)
+
         return created
 
     async def update_task(

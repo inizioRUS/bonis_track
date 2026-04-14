@@ -45,7 +45,6 @@ class HabrTool:
             text = re.sub(r"\s+", " ", text).strip()
             if text:
                 parts.append(text)
-        print(text)
         return {
             "url": url,
             "title": title,

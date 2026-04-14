@@ -18,6 +18,8 @@ ALLOWED_RETRIEVAL_TOOLS = {
     "asana.search_tasks",
     "asana.get_project_tasks",
     "asana.get_task",
+    "asana.get_project_members",
+    "asana.get_workspace_users",
     "asana.get_task_stories",
     "asana.get_projects",
     "asana.get_project",
@@ -66,7 +68,6 @@ async def iterative_retrieval_node(
         asana_tool: AsanaTool,
         habr_tool: HabrTool,
 ) -> dict:
-    print(state)
     plan = state.get("plan", {})
     steps = plan.get("steps", [])
 
@@ -142,11 +143,27 @@ async def iterative_retrieval_node(
             elif tool_name == "asana.get_workspaces":
                 result = await asana_tool.get_workspaces()
                 retrieval_results.append(result)
+            elif tool_name == "asana.get_project_members":
+                result = await asana_tool.get_project_members(
+                    project_gid=arguments.get("project_gid"),
+                    limit=arguments.get("limit"),
+                    offset=arguments.get("offset"),
+                    opt_fields=arguments.get("opt_fields"),
+                )
+                retrieval_results.append(result)
 
+            elif tool_name == "asana.get_workspace_users":
+                result = await asana_tool.get_workspace_users(
+                    workspace_gid=arguments.get("workspace_gid"),
+                    limit=arguments.get("limit"),
+                    offset=arguments.get("offset"),
+                    opt_fields=arguments.get("opt_fields"),
+                )
+                retrieval_results.append(result)
             elif tool_name == "asana.search_tasks":
                 text = arguments.get("text")
                 if not text and text != '':
-                    raise ValueError("asana.search_tasks requires 'text'")
+                    text = ''
 
                 result = await asana_tool.search_tasks(
                     text=text,

@@ -7,7 +7,6 @@ async def orchestrator_node(state: WorkflowState) -> dict:
     iteration = state.get("iteration", 0)
     max_iterations = state.get("max_iterations", 8)
     plan = state.get("plan", {})
-    print(plan)
     steps = plan.get("steps", [])
     execution_steps = plan.get("execution_steps", [])
     next_agent = state.get("next_agent", "agent")

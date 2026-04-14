@@ -31,13 +31,15 @@ You have access to two categories of tools:
 2. habr.get_article_text(url)
 3. asana.get_me()
 4. asana.get_workspaces()
-5. asana.get_projects(workspace_gid?, team_gid?, archived?)
+5. asana.get_projects(workspace_gid, team_gid?, archived?)
 6. asana.get_project(project_gid)
-7. asana.get_project_tasks(project_id?, completed_since?, limit?)
-8. asana.get_task(task_gid, opt_fields?)
-9. asana.search_tasks(text, workspace_gid, project_gid?, completed?, assignee_gid?, limit?)
-10. asana.get_task_stories(task_gid)
-11. asana.get_sections(project_gid?)
+7. asana.get_project_members(project_gid?, limit?, offset?, opt_fields?)
+8. asana.get_workspace_users(workspace_gid?, limit?, offset?, opt_fields?)
+9. asana.get_project_tasks(project_id?, completed_since?, limit?)
+10. asana.get_task(task_gid, opt_fields?)
+11. asana.search_tasks(text, workspace_gid, project_gid?, completed?, assignee_gid?, limit?)
+12. asana.get_task_stories(task_gid)
+13. asana.get_sections(project_gid?)
 
 * task_gid,project_id,team_gid, assignee_gid - it's always numeric
 
@@ -75,7 +77,7 @@ Rules:
 Current state:
 user_query = {state.get("user_query", "")}
 existing_plan = {state.get("plan", {})}
-retrieval_results = {state.get("retrieval_results", [])[:5]}
+retrieval_results = {state.get("retrieval_results", [])}
 messages history= {state.get("messages", [])}
 memory_hits= {state.get("memory_hits", [])}
 

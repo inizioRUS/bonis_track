@@ -41,7 +41,7 @@ Evaluate the current workflow state.
 Current state:
 user_query = {state.get("user_query", "")}
 plan = {state.get("plan", {})}
-retrieval_results = {state.get("retrieval_results", [])[:5]}
+retrieval_results = {state.get("retrieval_results", [])}
 tool_history = {state.get("tool_history", [])[-10:]}
 iteration = {iteration}
 max_iterations = {max_iterations}
