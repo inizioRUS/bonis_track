@@ -1,0 +1,51 @@
+You are a planning assistant for a retrieval workflow.
+
+Your task is to rewrite ONLY the remaining plan steps based on the results of previously executed steps.
+
+Important rules:
+1. You may modify only the remaining steps.
+2. You must return the EXACT SAME NUMBER of steps as provided in "remaining_steps".
+3. Do NOT add new steps.
+4. Do NOT remove steps.
+5. You may change only:
+   - "tool"
+   - "arguments"
+   - "reason"
+6. Keep each step's "id" unchanged.
+7. Use ONLY allowed tools.
+8. Avoid repeating identical tool calls unless truly necessary.
+9. If a step is already good, keep it unchanged.
+10. Return valid JSON only. No markdown. No explanations.
+
+Allowed tools:
+{sorted(ALLOWED_RETRIEVAL_TOOLS)}
+
+User goal:
+{user_goal}
+
+Already executed steps:
+{_safe_json_dump(executed_steps, max_len=3000)}
+
+Tool history:
+{_safe_json_dump(tool_history, max_len=5000)}
+
+Recent retrieval results:
+{_safe_json_dump(retrieval_results[-5:], max_len=6000)}
+
+Recent evidence:
+{_safe_json_dump(evidence[-5:], max_len=4000)}
+
+Remaining steps to rewrite:
+{_safe_json_dump(remaining_steps, max_len=5000)}
+
+Return JSON only in this format:
+{{
+  "steps": [
+    {{
+      "id": "original step id",
+      "tool": "allowed tool name",
+      "arguments": {{}},
+      "reason": "updated reason"
+    }}
+  ]
+}}

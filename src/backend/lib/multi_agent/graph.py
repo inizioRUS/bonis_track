@@ -34,7 +34,7 @@ def build_graph(
             retriever_tool,
             asana_tool,
             habr_tool,
-
+            llm
         )
 
     async def planner_graph_node(state: WorkflowState):

@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from contextlib import contextmanager
+from typing import Any, Iterator
 import hashlib
 from typing import Any
 
@@ -133,6 +134,35 @@ def flush_langfuse(tags=None) -> None:
     if client is not None:
         client.flush()
 
+@contextmanager
+def create_generation(
+    *,
+    name: str,
+    model_input: Any | None = None,
+    metadata: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+) -> Iterator[Any | None]:
+    client = get_langfuse_client(tags[0])
+
+    if client is None:
+        yield None
+        return
+
+    with client.start_as_current_observation(
+        name=name,
+        as_type="generation",
+    ) as gen:
+        update_kwargs: dict[str, Any] = {}
+
+        if model_input is not None:
+            update_kwargs["input"] = anonymize_state_fragment(model_input)
+        if metadata is not None:
+            update_kwargs["metadata"] = sanitize_value(metadata)
+
+        if update_kwargs:
+            gen.update(**update_kwargs)
+
+        yield gen
 
 __all__ = [
     "observe",
@@ -142,4 +172,5 @@ __all__ = [
     "log_langfuse_generation",
     "log_eval_scores",
     "flush_langfuse",
+    "create_generation"
 ]
